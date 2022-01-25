@@ -1730,12 +1730,9 @@ def get_host_bind():
 
 @app.route("/update_transfers", methods=["GET"])
 def update_transfers():
-    while True:
-        if g.db is not None and g.cur is not None:
-            confs = [c["conf"] for c in get_conf_list()]
-            for conf in confs:
-                get_transfer(conf)
-        time.sleep(60)
+    confs = [c["conf"] for c in get_conf_list()]
+    for conf in confs:
+        get_transfer(conf)
 
 
 if __name__ == "__main__":
