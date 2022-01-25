@@ -1732,9 +1732,10 @@ def get_host_bind():
 
 def update_transfers():
     while True:
-        confs = [c["conf"] for c in get_conf_list()]
-        for conf in confs:
-            get_transfer(conf)
+        if g.db is not None and g.cur is not None:
+            confs = [c["conf"] for c in get_conf_list()]
+            for conf in confs:
+                get_transfer(conf)
         time.sleep(60)
 
 
@@ -1749,4 +1750,6 @@ if __name__ == "__main__":
     app_port = config.get("Server", "app_port")
     WG_CONF_PATH = config.get("Server", "wg_conf_path")
     config.clear()
+    thread = Thread(target = update_trasnfers, args=())
+    thread.start()
     app.run(host=app_ip, debug=False, port=app_port)
