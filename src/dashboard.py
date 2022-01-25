@@ -1253,6 +1253,7 @@ def save_peer_setting(config_name):
     allowed_ip = data['allowed_ip']
     endpoint_allowed_ip = data['endpoint_allowed_ip']
     preshared_key = data['preshared_key']
+    remote_endpoint = data['remote_endpoint']
     check_peer_exist = g.cur.execute("SELECT COUNT(*) FROM " + config_name + " WHERE id = ?", (id,)).fetchone()
     if check_peer_exist[0] == 1:
         check_ip = check_repeat_allowed_ip(id, allowed_ip, config_name)
@@ -1264,6 +1265,8 @@ def save_peer_setting(config_name):
             return jsonify({"status": "failed", "msg": "MTU format is not correct."})
         if len(data['keep_alive']) == 0 or not data['keep_alive'].isdigit():
             return jsonify({"status": "failed", "msg": "Persistent Keepalive format is not correct."})
+        if not check_remote_endpoint(remote_endpoint):
+            return jsonify({"status": "failed", "msg": "Remote endpoint format is incorrect."})
         if private_key != "":
             check_key = f_check_key_match(private_key, id, config_name)
             if check_key['status'] == "failed":
@@ -1286,9 +1289,9 @@ def save_peer_setting(config_name):
             subprocess.check_output(f'wg-quick save {config_name}', shell=True, stderr=subprocess.STDOUT)
             if change_ip.decode("UTF-8") != "":
                 return jsonify({"status": "failed", "msg": change_ip.decode("UTF-8")})
-            sql = "UPDATE " + config_name + " SET name = ?, private_key = ?, DNS = ?, endpoint_allowed_ip = ?, mtu = ?, keepalive = ?, preshared_key = ? WHERE id = ?"
+            sql = "UPDATE " + config_name + " SET name = ?, private_key = ?, DNS = ?, endpoint_allowed_ip = ?, mtu = ?, keepalive = ?, preshared_key = ?, remote_endpoint = ? WHERE id = ?"
             g.cur.execute(sql, (name, private_key, dns_addresses, endpoint_allowed_ip, data["MTU"],
-                                data["keep_alive"], preshared_key, id))
+                                data["keep_alive"], preshared_key, remote_endpoint, id))
             return jsonify({"status": "success", "msg": ""})
         except subprocess.CalledProcessError as exc:
             return jsonify({"status": "failed", "msg": str(exc.output.decode("UTF-8").strip())})
@@ -1310,11 +1313,12 @@ def get_peer_name(config_name):
     data = request.get_json()
     peer_id = data['id']
     result = g.cur.execute(
-        "SELECT name, allowed_ip, DNS, private_key, endpoint_allowed_ip, mtu, keepalive, preshared_key FROM "
+        "SELECT name, allowed_ip, DNS, private_key, endpoint_allowed_ip, mtu, keepalive, preshared_key, remote_endpoint FROM "
         + config_name + " WHERE id = ?", (peer_id,)).fetchall()
     data = {"name": result[0][0], "allowed_ip": result[0][1], "DNS": result[0][2],
             "private_key": result[0][3], "endpoint_allowed_ip": result[0][4],
-            "mtu": result[0][5], "keep_alive": result[0][6], "preshared_key": result[0][7]}
+            "mtu": result[0][5], "keep_alive": result[0][6], "preshared_key": result[0][7],
+            "remote_endpoint": result[0][8]}
     return jsonify(data)
 
 
@@ -1349,7 +1353,7 @@ def generate_qrcode(config_name):
     """
     peer_id = request.args.get('id')
     get_peer = g.cur.execute(
-        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key FROM "
+        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key, remote_endpoint FROM "
         + config_name + " WHERE id = ?", (peer_id,)).fetchall()
     config = get_dashboard_conf()
     if len(get_peer) == 1:
@@ -1357,7 +1361,6 @@ def generate_qrcode(config_name):
         if peer[0] != "":
             public_key = get_conf_pub_key(config_name)
             listen_port = get_conf_listen_port(config_name)
-            endpoint = config.get("Peers", "remote_endpoint") + ":" + listen_port
             private_key = peer[0]
             allowed_ip = peer[1]
             dns_addresses = peer[2]
@@ -1365,6 +1368,7 @@ def generate_qrcode(config_name):
             endpoint_allowed_ip = peer[4]
             keepalive = peer[5]
             preshared_key = peer[6]
+            endpoint = peer[7] + ":" + listen_port
 
             result = "[Interface]\nPrivateKey = " + private_key + "\nAddress = " + allowed_ip + "\nMTU = " \
                      + str(mtu_value) + "\nDNS = " + dns_addresses + "\n\n[Peer]\nPublicKey = " + public_key \
@@ -1385,13 +1389,12 @@ def download_all(config_name):
     @return: JSON Object
     """
     get_peer = g.cur.execute(
-        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key, name FROM "
+        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key, name, remote_endpoint FROM "
         + config_name + " WHERE private_key != ''").fetchall()
     config = get_dashboard_conf()
     data = []
     public_key = get_conf_pub_key(config_name)
     listen_port = get_conf_listen_port(config_name)
-    endpoint = config.get("Peers", "remote_endpoint") + ":" + listen_port
     for peer in get_peer:
         private_key = peer[0]
         allowed_ip = peer[1]
@@ -1401,6 +1404,7 @@ def download_all(config_name):
         keepalive = peer[5]
         preshared_key = peer[6]
         filename = peer[7]
+        endpoint = peer[8] + ":" + listen_port
         if len(filename) == 0:
             filename = "Untitled_Peer"
         else:
@@ -1437,7 +1441,7 @@ def download(config_name):
     """
     peer_id = request.args.get('id')
     get_peer = g.cur.execute(
-        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key, name FROM "
+        "SELECT private_key, allowed_ip, DNS, mtu, endpoint_allowed_ip, keepalive, preshared_key, name, remote_endpoint FROM "
         + config_name + " WHERE id = ?", (peer_id,)).fetchall()
     config = get_dashboard_conf()
     if len(get_peer) == 1:
@@ -1445,7 +1449,6 @@ def download(config_name):
         if peer[0] != "":
             public_key = get_conf_pub_key(config_name)
             listen_port = get_conf_listen_port(config_name)
-            endpoint = config.get("Peers", "remote_endpoint") + ":" + listen_port
             private_key = peer[0]
             allowed_ip = peer[1]
             dns_addresses = peer[2]
@@ -1454,6 +1457,7 @@ def download(config_name):
             keepalive = peer[5]
             preshared_key = peer[6]
             filename = peer[7]
+            endpoint = peer[8] + ":" + listen_port
             if len(filename) == 0:
                 filename = "Untitled_Peer"
             else:
