@@ -872,6 +872,7 @@ $body.on("click", ".btn-setting-peer", function(){
             $("#setting_modal #peer_mtu").val(response.mtu);
             $("#setting_modal #peer_keep_alive").val(response.keep_alive);
             $("#setting_modal #peer_preshared_key_textbox").val(response.preshared_key);
+            $("#setting_modal #peer_remote_endpoint").val(response.remote_endpoint);
             window.configurations.settingModal().toggle();
             window.configurations.endProgressBar();
         }
@@ -923,6 +924,7 @@ $("#save_peer_setting").on("click",function (){
     let $peer_preshared_key_textbox = $("#peer_preshared_key_textbox");
     let $peer_mtu = $("#peer_mtu");
     let $peer_keep_alive = $("#peer_keep_alive");
+    let $remote_endpoint = $("#peer_remote_endpoint");
 
     if ($peer_DNS_textbox.val() !== "" &&
         $peer_allowed_ip_textbox.val() !== "" && $peer_endpoint_allowed_ips.val() !== ""){
@@ -945,7 +947,8 @@ $("#save_peer_setting").on("click",function (){
                 endpoint_allowed_ip: $peer_endpoint_allowed_ips.val(),
                 MTU: $peer_mtu.val(),
                 keep_alive: $peer_keep_alive.val(),
-                preshared_key: $peer_preshared_key_textbox.val()
+                preshared_key: $peer_preshared_key_textbox.val(),
+				remote_endpoint: $remote_endpoint.val(),
             }),
             success: function (response){
                 if (response.status === "failed"){
