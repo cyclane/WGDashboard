@@ -255,8 +255,8 @@ def get_transfer(config_name):
         if len(cur_i) > 0:
             total_sent = cur_i[0][1]
             total_receive = cur_i[0][0]
-            cur_total_sent = round(int(data_usage[i][2]) / (1024 ** 3), 4)
-            cur_total_receive = round(int(data_usage[i][1]) / (1024 ** 3), 4)
+            cur_total_sent = round(int(data_usage[i][2]) / (1024 ** 3), 5)
+            cur_total_receive = round(int(data_usage[i][1]) / (1024 ** 3), 5)
             last_sent, last_receive = total_sent, total_receive
             ts, last_ts = time.time(), cur_i[0][5]
             rx, tx = cur_i[0][6], cur_i[0][7]
