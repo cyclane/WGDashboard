@@ -1733,6 +1733,7 @@ def update_transfers():
     confs = [c["conf"] for c in get_conf_list()]
     for conf in confs:
         get_transfer(conf)
+    return "success"
 
 
 if __name__ == "__main__":
