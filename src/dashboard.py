@@ -30,6 +30,8 @@ from icmplib import ping, traceroute
 from util import regex_match, check_DNS, check_Allowed_IPs, check_remote_endpoint, \
     check_IP_with_range, clean_IP_with_range
 
+from threading import Thread
+
 # Dashboard Version
 DASHBOARD_VERSION = 'v3.0.3'
 # WireGuard's configuration path
@@ -1727,6 +1729,13 @@ def get_host_bind():
     app_port = config.get("Server", "app_port")
 
     return app_ip, app_port
+
+def update_transfers():
+    while True:
+        confs = [c["conf"] for c in get_conf_list()]
+        for conf in confs:
+            get_transfer(conf)
+        time.sleep(60)
 
 
 if __name__ == "__main__":
