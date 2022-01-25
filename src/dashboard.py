@@ -1265,8 +1265,15 @@ def save_peer_setting(config_name):
             return jsonify({"status": "failed", "msg": "MTU format is not correct."})
         if len(data['keep_alive']) == 0 or not data['keep_alive'].isdigit():
             return jsonify({"status": "failed", "msg": "Persistent Keepalive format is not correct."})
-        if not check_remote_endpoint(remote_endpoint):
+        if not check_remote_endpoint(remote_endpoint.split(":")[0]):
             return jsonify({"status": "failed", "msg": "Remote endpoint format is incorrect."})
+        if ":" in remote_endpoint:
+            try:
+                remote_port = int(remote_endpoint.split(":")[1])
+                if remote_port > 65535:
+                    raise ValueError()
+            except ValueError:
+                return jsonify({"status": "failed", "msg": "Remote endpoint port format is incorrect."})
         if private_key != "":
             check_key = f_check_key_match(private_key, id, config_name)
             if check_key['status'] == "failed":
@@ -1368,7 +1375,9 @@ def generate_qrcode(config_name):
             endpoint_allowed_ip = peer[4]
             keepalive = peer[5]
             preshared_key = peer[6]
-            endpoint = peer[7] + ":" + listen_port
+            endpoint = peer[7]
+            if ":" not in endpoint:
+                endpoint = endpoint + ":" + str(listen_port)
 
             result = "[Interface]\nPrivateKey = " + private_key + "\nAddress = " + allowed_ip + "\nMTU = " \
                      + str(mtu_value) + "\nDNS = " + dns_addresses + "\n\n[Peer]\nPublicKey = " + public_key \
@@ -1404,7 +1413,9 @@ def download_all(config_name):
         keepalive = peer[5]
         preshared_key = peer[6]
         filename = peer[7]
-        endpoint = peer[8] + ":" + listen_port
+        endpoint = peer[8]
+        if ":" not in endpoint:
+            endpoint = endpoint + ":" + str(listen_port)
         if len(filename) == 0:
             filename = "Untitled_Peer"
         else:
@@ -1457,7 +1468,9 @@ def download(config_name):
             keepalive = peer[5]
             preshared_key = peer[6]
             filename = peer[7]
-            endpoint = peer[8] + ":" + listen_port
+            endpoint = peer[8]
+            if ":" not in endpoint:
+                endpoint = endpoint + ":" + str(listen_port)
             if len(filename) == 0:
                 filename = "Untitled_Peer"
             else:
