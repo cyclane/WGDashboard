@@ -30,8 +30,6 @@ from icmplib import ping, traceroute
 from util import regex_match, check_DNS, check_Allowed_IPs, check_remote_endpoint, \
     check_IP_with_range, clean_IP_with_range
 
-from threading import Thread
-
 # Dashboard Version
 DASHBOARD_VERSION = 'v3.0.3'
 # WireGuard's configuration path
@@ -655,7 +653,7 @@ def auth_req():
                 request.endpoint != "signin" and \
                 request.endpoint != "signout" and \
                 request.endpoint != "auth" and \
-                "username" not in session:
+                "username" not in session and request.remote_addr != "127.0.0.1":
             print("User not signed in - Attempted access: " + str(request.endpoint))
             if request.endpoint != "index":
                 session['message'] = "You need to sign in first!"
@@ -1730,6 +1728,7 @@ def get_host_bind():
 
     return app_ip, app_port
 
+@app.route("/update_transfers", methods=["GET"])
 def update_transfers():
     while True:
         if g.db is not None and g.cur is not None:
@@ -1750,6 +1749,4 @@ if __name__ == "__main__":
     app_port = config.get("Server", "app_port")
     WG_CONF_PATH = config.get("Server", "wg_conf_path")
     config.clear()
-    thread = Thread(target = update_trasnfers, args=())
-    thread.start()
     app.run(host=app_ip, debug=False, port=app_port)
