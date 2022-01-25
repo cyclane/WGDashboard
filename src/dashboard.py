@@ -653,7 +653,9 @@ def auth_req():
                 request.endpoint != "signin" and \
                 request.endpoint != "signout" and \
                 request.endpoint != "auth" and \
-                "username" not in session and request.remote_addr != "127.0.0.1":
+                "username" not in session and \
+                request.remote_addr != "127.0.0.1" and \
+                request.remote_addr != config.get("Server", "app_ip"):
             print("User not signed in - Attempted access: " + str(request.endpoint))
             if request.endpoint != "index":
                 session['message'] = "You need to sign in first!"
