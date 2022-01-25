@@ -257,7 +257,6 @@ def get_transfer(config_name):
             total_receive = cur_i[0][0]
             cur_total_sent = round(int(data_usage[i][2]) / (1024 ** 3), 5)
             cur_total_receive = round(int(data_usage[i][1]) / (1024 ** 3), 5)
-            last_sent, last_receive = total_sent, total_receive
             ts, last_ts = time.time(), cur_i[0][5]
             rx, tx = cur_i[0][6], cur_i[0][7]
             if cur_i[0][4] == "running":
@@ -270,13 +269,13 @@ def get_transfer(config_name):
                     cumulative_receive = cur_i[0][2] + total_receive
                     cumulative_sent = cur_i[0][3] + total_sent
                     g.cur.execute("UPDATE %s SET cumu_receive = %f, cumu_sent = %f, cumu_data = %f WHERE id = '%s'" %
-                                  (config_name, round(cumulative_receive, 4), round(cumulative_sent, 4),
-                                   round(cumulative_sent + cumulative_receive, 4), data_usage[i][0]))
+                                  (config_name, round(cumulative_receive, 5), round(cumulative_sent, 5),
+                                   round(cumulative_sent + cumulative_receive, 5), data_usage[i][0]))
                     total_sent = 0
                     total_receive = 0
                 g.cur.execute("UPDATE %s SET total_receive = %f, total_sent = %f, total_data = %f, transfer_ts = %f, rx = %f, tx = %f WHERE id = '%s'" %
-                              (config_name, round(total_receive, 4), round(total_sent, 4),
-                               round(total_receive + total_sent, 4), ts, rx, tx, data_usage[i][0]))
+                              (config_name, round(total_receive, 5), round(total_sent, 5),
+                               round(total_receive + total_sent, 5), ts, rx, tx, data_usage[i][0]))
 
 
 def get_endpoint(config_name):
