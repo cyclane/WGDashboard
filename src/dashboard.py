@@ -644,6 +644,10 @@ def auth_req():
     if getattr(g, 'db', None) is None:
         g.db = connect_db()
         g.cur = g.db.cursor()
+    if getattr(g, "app_ip", None) is None:
+        config = configparser.ConfigParser(strict=False)
+        config.read('wg-dashboard.ini')
+        g.app_ip = config.get("Server", "app_ip")
     conf = get_dashboard_conf()
     req = conf.get("Server", "auth_req")
     session['update'] = UPDATE
@@ -655,7 +659,7 @@ def auth_req():
                 request.endpoint != "auth" and \
                 "username" not in session and \
                 request.remote_addr != "127.0.0.1" and \
-                request.remote_addr != config.get("Server", "app_ip"):
+                request.remote_addr != g.app_ip:
             print("User not signed in - Attempted access: " + str(request.endpoint))
             if request.endpoint != "index":
                 session['message'] = "You need to sign in first!"
